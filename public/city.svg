@@ -1,0 +1,124 @@
+<svg width="615" height="420" viewBox="0 0 615 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glass-a" x1="58" x2="106" y1="54" y2="270" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#AFC4C9"/>
+      <stop offset=".45" stop-color="#7F969B"/>
+      <stop offset="1" stop-color="#4E6268"/>
+    </linearGradient>
+    <linearGradient id="glass-b" x1="170" x2="226" y1="86" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B5CED3"/>
+      <stop offset=".45" stop-color="#789099"/>
+      <stop offset="1" stop-color="#405158"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="80" x2="455" y1="170" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7BE8D"/>
+      <stop offset=".52" stop-color="#9C7A54"/>
+      <stop offset="1" stop-color="#6B584C"/>
+    </linearGradient>
+    <linearGradient id="dark-glass" x1="150" x2="405" y1="210" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#425158"/>
+      <stop offset=".54" stop-color="#263238"/>
+      <stop offset="1" stop-color="#151B20"/>
+    </linearGradient>
+    <linearGradient id="empire" x1="392" x2="456" y1="0" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7D3C9"/>
+      <stop offset=".48" stop-color="#A9A59B"/>
+      <stop offset="1" stop-color="#736D64"/>
+    </linearGradient>
+    <linearGradient id="white-tower" x1="320" x2="388" y1="202" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDE8EA"/>
+      <stop offset=".6" stop-color="#B7C3C4"/>
+      <stop offset="1" stop-color="#899392"/>
+    </linearGradient>
+  </defs>
+
+  <g id="buildings" stroke-linejoin="round">
+    <g id="rear-low" opacity=".95">
+      <path d="M10 271h50v149H10V271Z" fill="#A8B5AE"/>
+      <path d="M20 254h42v166H20V254Z" fill="#C7B08A"/>
+      <path d="M497 193h38v227h-38V193Z" fill="#95AFB8"/>
+      <path d="M535 178h51v242h-51V178Z" fill="#A7B7BA"/>
+      <path d="M586 201h28v219h-28V201Z" fill="#D7B881"/>
+    </g>
+
+    <g id="left-glass-tower">
+      <path d="M53 58 82 52l27 10v246H53V58Z" fill="url(#glass-a)"/>
+      <path d="M82 52v256M53 58h56" stroke="#39464C" stroke-opacity=".38" stroke-width="1"/>
+      <path d="M58 72h45M58 84h45M58 96h45M58 108h45M58 120h45M58 132h45M58 144h45M58 156h45M58 168h45M58 180h45M58 192h45M58 204h45M58 216h45M58 228h45M58 240h45M58 252h45M58 264h45M58 276h45" stroke="#DFEBED" stroke-opacity=".28"/>
+      <path d="M67 62v235M94 58v246" stroke="#1D262B" stroke-opacity=".24"/>
+    </g>
+
+    <g id="center-glass-tower">
+      <path d="M164 86h40l19 10v229h-59V86Z" fill="url(#glass-b)"/>
+      <path d="m204 86 19 10v228h-19V86Z" fill="#58727A"/>
+      <path d="M170 100h46M170 113h47M170 126h47M170 139h47M170 152h47M170 165h47M170 178h47M170 191h47M170 204h47M170 217h47M170 230h47M170 243h47M170 256h47M170 269h47M170 282h47M170 295h47" stroke="#E1ECEE" stroke-opacity=".34"/>
+      <path d="M180 89v231M193 88v232M208 92v230" stroke="#223037" stroke-opacity=".33"/>
+    </g>
+
+    <g id="mid-dark-stack">
+      <path d="M202 237h83v183h-83V237Z" fill="url(#dark-glass)"/>
+      <path d="M215 185h52v235h-52V185Z" fill="#667F87"/>
+      <path d="M218 175h45l7 10h-59l7-10Z" fill="#8EA6AD"/>
+      <path d="M225 196h35M225 209h35M225 222h35M225 235h35M225 248h35M225 261h35M225 274h35M225 287h35M225 300h35M225 313h35M225 326h35" stroke="#DCE8E9" stroke-opacity=".34"/>
+      <path d="M208 250h70M208 266h70M208 282h70M208 298h70M208 314h70M208 330h70M208 346h70M208 362h70M208 378h70M208 394h70" stroke="#607078" stroke-opacity=".6"/>
+    </g>
+
+    <g id="wedge-tower">
+      <path d="M275 178 310 151l27 27v242h-62V178Z" fill="#C4D0D0"/>
+      <path d="M310 151v269" stroke="#53636A" stroke-opacity=".55"/>
+      <path d="M284 190h44M284 205h44M284 220h44M284 235h44M284 250h44M284 265h44M284 280h44M284 295h44M284 310h44M284 325h44M284 340h44M284 355h44M284 370h44M284 385h44" stroke="#EEF3F1" stroke-opacity=".55"/>
+      <path d="M291 182v232M302 167v247M320 170v244" stroke="#7B888A" stroke-opacity=".56"/>
+    </g>
+
+    <g id="white-rounded-tower">
+      <path d="M330 208c0-14 13-22 34-22 22 0 35 8 35 22v212h-69V208Z" fill="url(#white-tower)"/>
+      <path d="M340 210h49M336 231h58M336 253h58M336 275h58M336 297h58M336 319h58M336 341h58M336 363h58M336 385h58" stroke="#6F7D81" stroke-opacity=".44"/>
+      <path d="M347 193v227M365 188v232M383 193v227" stroke="#F7FBFA" stroke-opacity=".6"/>
+      <path d="M332 222c23 5 45 5 66 0" stroke="#EFF5F4" stroke-opacity=".7"/>
+    </g>
+
+    <g id="empire-building">
+      <path d="M403 32h39v388h-39V32Z" fill="url(#empire)"/>
+      <path d="M410 18h25v20h-25V18Z" fill="#9F9A91"/>
+      <path d="m422.5 0 4.5 18h-9l4.5-18Z" fill="#817A71"/>
+      <path d="M395 74h55l9 73v273h-73V147l9-73Z" fill="url(#empire)"/>
+      <path d="M399 105h48M396 127h53M393 149h58M393 171h58M393 193h58M393 215h58M393 237h58M393 259h58M393 281h58M393 303h58M393 325h58M393 347h58M393 369h58M393 391h58" stroke="#F1EEE6" stroke-opacity=".52"/>
+      <path d="M406 80v334M416 39v375M423 23v391M431 39v375M441 80v334" stroke="#5A554F" stroke-opacity=".5"/>
+      <path d="M411 65h24M407 52h31" stroke="#E6E1D8" stroke-opacity=".58"/>
+    </g>
+
+    <g id="front-stone-buildings">
+      <path d="M45 242h76v178H45V242Z" fill="url(#stone)"/>
+      <path d="M58 206h50l17 36H41l17-36Z" fill="#D5BA83"/>
+      <path d="M61 190h45v20H61v-20Z" fill="#B79E76"/>
+      <path d="M83 164 103 191H64l19-27Z" fill="#D5C29A"/>
+      <path d="M82 151h3v18h-3v-18Z" fill="#CDB78C"/>
+      <path d="M57 253h52M57 271h52M57 289h52M57 307h52M57 325h52M57 343h52M57 361h52M57 379h52M57 397h52" stroke="#F2D49C" stroke-opacity=".45"/>
+      <path d="M66 247v171M83 247v171M100 247v171" stroke="#4D3B31" stroke-opacity=".45"/>
+
+      <path d="M121 285h96v135h-96V285Z" fill="#876447"/>
+      <path d="M133 270h72v150h-72V270Z" fill="#B79669"/>
+      <path d="M144 283h12v137h-12V283ZM169 283h12v137h-12V283ZM194 283h12v137h-12V283Z" fill="#46362F" opacity=".72"/>
+      <path d="M132 300h75M132 319h75M132 338h75M132 357h75M132 376h75M132 395h75" stroke="#F4D5A0" stroke-opacity=".35"/>
+
+      <path d="M222 330h86v90h-86v-90Z" fill="#A48058"/>
+      <path d="M229 306h73v114h-73V306Z" fill="#C7A16F"/>
+      <path d="M236 318h58M236 337h58M236 356h58M236 375h58M236 394h58" stroke="#F4D4A0" stroke-opacity=".42"/>
+      <path d="M244 313v104M261 313v104M278 313v104M295 313v104" stroke="#4C3A30" stroke-opacity=".5"/>
+
+      <path d="M450 261h70v159h-70V261Z" fill="#C9B186"/>
+      <path d="M458 272h54M458 290h54M458 308h54M458 326h54M458 344h54M458 362h54M458 380h54M458 398h54" stroke="#F6D9A8" stroke-opacity=".42"/>
+      <path d="M466 266v149M482 266v149M498 266v149" stroke="#4B3F39" stroke-opacity=".38"/>
+
+      <path d="M515 288h76v132h-76V288Z" fill="#AA8A5D"/>
+      <path d="M524 270h58v150h-58V270Z" fill="#D0AD76"/>
+      <path d="M531 285h43M531 303h43M531 321h43M531 339h43M531 357h43M531 375h43M531 393h43" stroke="#F4D79D" stroke-opacity=".5"/>
+      <path d="M540 276v140M553 276v140M566 276v140" stroke="#5B4334" stroke-opacity=".42"/>
+    </g>
+
+    <g id="street-shadow">
+      <path d="M0 413h615v7H0v-7Z" fill="#1B1D23" opacity=".72"/>
+      <path d="M32 404h548v9H32v-9Z" fill="#2D2D31" opacity=".35"/>
+    </g>
+  </g>
+</svg>
