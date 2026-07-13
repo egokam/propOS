@@ -10,12 +10,9 @@ import { authClient } from "@/lib/auth-client";
 
 const PROPERTY_TYPES = [
     "Syndic",
-    "Résidence",
     "Villa",
-    "Bureau",
-    "Centre commercial",
-    "Parking",
-    "Immeuble"
+    "Immeuble",
+    "commercial agent"
 ];
 
 export default function Register() {
@@ -32,6 +29,7 @@ export default function Register() {
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [selectedProperty, setSelectedProperty] = useState(PROPERTY_TYPES[0]);
+    const [propertyName, setPropertyName] = useState("");
     const [address, setAddress] = useState("");
 
     const handleOtpChange = (index: number, value: string) => {
@@ -61,7 +59,6 @@ export default function Register() {
                 name: name,
             });
 
-            // هنا كان الخطأ: أضفنا تنبيهاً ليخبرك إذا كان الإيميل موجوداً بالفعل
             if (res.error) {
                 alert(res.error.message || "Failed to sign up. This email might already exist!");
                 setIsLoading(false);
@@ -110,33 +107,22 @@ export default function Register() {
         }
     };
 
-    const handleRegisterProperty = async (e: React.FormEvent) => {
+    const handleContinueToSetup = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        try {
-            const res = await fetch("/api/properties", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    property_type: selectedProperty,
-                    address,
-                    latitude: null,
-                    longitude: null
-                }),
-            });
+        // تحويل نوع العقار إلى صيغة مناسبة للرابط (مثال: Centre commercial -> centre-commercial)
+        const typeSlug = selectedProperty.toLowerCase().replace(/\s+/g, '-');
+        
+        // تجهيز البيانات لتمريرها في الرابط
+        const queryParams = new URLSearchParams({
+            type: selectedProperty,
+            name: propertyName,
+            address: address
+        }).toString();
 
-            if (res.ok) {
-                router.push("/dashboard");
-            } else {
-                alert("Failed to register property.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("An error occurred while registering the property.");
-        } finally {
-            setIsLoading(false);
-        }
+        // توجيه المستخدم إلى صفحة الإعداد المخصصة
+        router.push(`/setup/${typeSlug}?${queryParams}`);
     };
 
     return (
@@ -246,23 +232,14 @@ export default function Register() {
                                 >
                                     Resend Code
                                 </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setStep(1)}
-                                    disabled={isLoading}
-                                    className="w-full inline-flex h-[46px] items-center justify-center whitespace-nowrap rounded-[4px] bg-transparent border border-white/10 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 transition-all duration-200 ease-out hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Back
-                                </button>
                             </div>
                         </form>
                     )}
 
                     {step === 3 && (
-                        <form onSubmit={handleRegisterProperty} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <h1 className="text-[32px] font-medium leading-tight mb-2">Property Details</h1>
-                            <p className="text-[14px] text-white/45 mb-8">Tell us about the property you want to manage.</p>
+                        <form onSubmit={handleContinueToSetup} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <h1 className="text-[32px] font-medium leading-tight mb-2">Primary Details</h1>
+                            <p className="text-[14px] text-white/45 mb-8">What are you managing?</p>
 
                             <div className="space-y-4">
                                 <div className="relative">
@@ -298,38 +275,37 @@ export default function Register() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Address</label>
+                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Property Name</label>
                                     <input
                                         type="text"
                                         required
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
+                                        placeholder="e.g. Résidence Les Palmiers"
+                                        value={propertyName}
+                                        onChange={(e) => setPropertyName(e.target.value)}
                                         className="w-full h-[46px] bg-[#1a1a24] border border-white/5 rounded-[4px] px-4 text-[14px] text-white focus:outline-none focus:border-[#FF5E5F] focus:ring-1 focus:ring-[#FF5E5F] transition-all"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Location</label>
-                                    <button
-                                        type="button"
-                                        className="w-full h-[46px] bg-[#1a1a24] border border-white/5 rounded-[4px] px-4 flex items-center justify-center gap-2 text-[14px] text-white/70 hover:text-white hover:bg-white/5 transition-all focus:outline-none focus:border-[#FF5E5F] focus:ring-1 focus:ring-[#FF5E5F]"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span>Choose on map</span>
-                                        <span className="text-white/40 text-[12px] ml-1">(Optional)</span>
-                                    </button>
+                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Address</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Main street, City"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full h-[46px] bg-[#1a1a24] border border-white/5 rounded-[4px] px-4 text-[14px] text-white focus:outline-none focus:border-[#FF5E5F] focus:ring-1 focus:ring-[#FF5E5F] transition-all"
+                                    />
                                 </div>
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="mt-8 w-full inline-flex h-[46px] items-center justify-center whitespace-nowrap rounded-[4px] bg-[#FF5E5F] text-[10px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(255,94,95,0.28),0_3px_8px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:bg-[#ff6b6c] hover:shadow-[0_14px_28px_rgba(255,94,95,0.35),0_8px_18px_rgba(0,0,0,0.18)] active:translate-y-[1px] active:scale-[0.985] active:shadow-[0_4px_10px_rgba(255,94,95,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A8B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#232332] disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="group mt-8 w-full inline-flex h-[46px] items-center justify-center gap-2 whitespace-nowrap rounded-[4px] bg-[#FF5E5F] text-[10px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(255,94,95,0.28),0_3px_8px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out hover:-translate-y-[2px] hover:bg-[#ff6b6c] hover:shadow-[0_14px_28px_rgba(255,94,95,0.35),0_8px_18px_rgba(0,0,0,0.18)] active:translate-y-[1px] active:scale-[0.985] active:shadow-[0_4px_10px_rgba(255,94,95,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A8B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#232332] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isLoading ? "Registering..." : "Register Property"}
+                                <span>{isLoading ? "Loading..." : "Next: Complete Setup"}</span>
+                                {!isLoading && <ArrowRightIcon className="h-[10px] w-[10px] transition-transform duration-200 group-hover:translate-x-1 group-active:translate-x-[2px]" />}
                             </button>
 
                         </form>
