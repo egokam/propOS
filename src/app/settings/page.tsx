@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
-// استدعاء المكونات المستقلة الجديدة
+import ProfilePicUploader from "@/components/settings/ProfilePicUploader";
 import AppAuthenticator from "@/components/settings/AppAuthenticator";
 import EmailAuthenticator from "@/components/settings/EmailAuthenticator";
 
@@ -14,6 +14,7 @@ export default function SettingsPage() {
 
     const [activeTab, setActiveTab] = useState("personal");
 
+    const [profileImage, setProfileImage] = useState("");
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [pendingEmail, setPendingEmail] = useState("");
@@ -52,6 +53,7 @@ export default function SettingsPage() {
         if (session?.user) {
             setFullName(session.user.name || "");
             setEmail(session.user.email || "");
+            setProfileImage(session.user.image || "");
             fetchActiveSessions();
         }
     }, [session, isPending, router]);
@@ -96,11 +98,25 @@ export default function SettingsPage() {
             const res = await fetch("/api/settings/personal", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "update_profile", fullName, phoneNumber })
+                body: JSON.stringify({ action: "update_profile", fullName, phoneNumber, image: profileImage })
             });
-            if (res.ok) alert("Personal details updated successfully!");
+            
+            if (res.ok) {
+                const data = await res.json();
+                
+                // 🚀 السحر هنا: إجبار مكتبة better-auth على تحديث الجلسة فوراً
+                await authClient.updateUser({
+                    name: fullName,
+                    image: data.imageUrl // نضع رابط Supabase الجديد هنا
+                });
+
+                setProfileImage(data.imageUrl); // تحديث المتغير المحلي لتتغير الدائرة الكبيرة
+                alert("Personal details updated successfully!");
+            } else {
+                alert("Failed to upload image. Please check your Supabase credentials or server terminal for errors.");
+            }
         } catch (error) {
-            console.error(error);
+            console.error("Save error:", error);
         }
     };
 
@@ -319,8 +335,13 @@ export default function SettingsPage() {
                             <p className="text-sm font-medium">{session?.user?.name}</p>
                             <p className="text-xs text-white/40">{session?.user?.email}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-[#02AFA9] flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-[#222231]">
-                            {userInitials}
+                        <div className="w-10 h-10 rounded-full bg-[#02AFA9] flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-[#222231] overflow-hidden">
+                            {/* تحديث الـ Header ليعرض الصورة المصغرة في حال توفرها */}
+                            {profileImage ? (
+                                <img src={profileImage} alt="User" className="w-full h-full object-cover" />
+                            ) : (
+                                userInitials
+                            )}
                         </div>
                     </div>
                 </header>
@@ -362,7 +383,15 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="bg-[#1a1a24] border border-white/5 rounded-xl p-6 space-y-6">
-                                        <div>
+                                        
+                                        {/* 🌟 المكون السحري للصورة يظهر هنا 🌟 */}
+                                        <ProfilePicUploader 
+                                            currentImage={profileImage} 
+                                            onImageChange={setProfileImage} 
+                                            userInitials={userInitials} 
+                                        />
+
+                                        <div className="border-t border-white/5 pt-6">
                                             <label className="block text-[11px] font-semibold uppercase tracking-wider text-white/50 mb-2">Full Name</label>
                                             <input
                                                 type="text"

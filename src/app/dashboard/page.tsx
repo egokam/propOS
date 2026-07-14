@@ -116,6 +116,7 @@ export default function Dashboard() {
     if (!session) return null;
 
     const userInitials = session.user.name ? session.user.name.charAt(0).toUpperCase() : "U";
+    const profileImage = session.user.image; // استخراج رابط الصورة من الجلسة
 
     return (
         <div className="min-h-dvh bg-[#222231] text-white flex relative" onClick={() => setOpenMenuId(null)}>
@@ -168,9 +169,16 @@ export default function Dashboard() {
                             <p className="text-sm font-medium">{session.user.name}</p>
                             <p className="text-xs text-white/40">{session.user.email}</p>
                         </div>
-                        {/* Account Icon */}
-                        <div className="w-10 h-10 rounded-full bg-[#02AFA9] flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-[#222231] cursor-pointer hover:scale-105 transition-transform">
-                            {userInitials}
+                        {/* Account Icon 🌟 التحديث هنا لعرض الصورة 🌟 */}
+                        <div 
+                            onClick={() => router.push("/settings")}
+                            className="w-10 h-10 rounded-full bg-[#02AFA9] flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-[#222231] cursor-pointer hover:scale-105 transition-transform overflow-hidden"
+                        >
+                            {profileImage ? (
+                                <img src={profileImage} alt="User Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                userInitials
+                            )}
                         </div>
                     </div>
                 </header>

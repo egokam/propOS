@@ -3,6 +3,13 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { pool } from "@/lib/db";
 import nodemailer from "nodemailer";
+import { createClient } from "@supabase/supabase-js";
+
+// 📡 تهيئة عميل سوبابيز داخل السيرفر بصلاحيات السيرفر الكاملة
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
@@ -35,15 +42,57 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { action } = body;
 
+        // 🌟 التحديث الكلي والمعزول لقسم رفع الصورة الشخصية للـ Bucket 🌟
+        // 🌟 التحديث الكلي والمعزول لقسم رفع الصورة الشخصية للـ Bucket 🌟
         if (action === "update_profile") {
-            const { fullName, phoneNumber } = body;
+            const { fullName, phoneNumber, image } = body;
+            let finalImageUrl = image; // الاحتفاظ بالقيمة الافتراضية
+
+            // الفحص الذكي: إذا كانت الصورة قادمة كـ Base64 نقوم بمعالجتها ورفعها للـ Bucket
+            if (image && image.startsWith("data:image")) {
+                try {
+                    const mimeType = image.match(/data:(.*?);base64/)?.[1] || "image/jpeg";
+                    const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+                    const buffer = Buffer.from(base64Data, "base64");
+                    
+                    const fileExt = mimeType.split("/")[1] || "jpg";
+                    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+                    const filePath = `avatars/${fileName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from("avatars") 
+                        .upload(filePath, buffer, {
+                            contentType: mimeType,
+                            upsert: true,
+                        });
+
+                    if (uploadError) {
+                        console.error("Supabase Bucket Upload Error:", uploadError);
+                        return NextResponse.json({ message: "Failed to upload image to storage" }, { status: 500 });
+                    }
+
+                    const { data: publicUrlData } = supabase.storage
+                        .from("avatars")
+                        .getPublicUrl(filePath);
+
+                    finalImageUrl = publicUrlData.publicUrl;
+                } catch (imgError) {
+                    console.error("Image processing error:", imgError);
+                    return NextResponse.json({ message: "Error processing profile image" }, { status: 500 });
+                }
+            }
+
+            // تحديث الجدول الصافي برابط الـ Public URL
             await pool.query(
-                `UPDATE "user" SET name = $1, phone_number = $2 WHERE id = $3`,
-                [fullName, phoneNumber, userId]
+                `UPDATE "user" SET name = $1, phone_number = $2, image = $3 WHERE id = $4`,
+                [fullName, phoneNumber, finalImageUrl, userId]
             );
-            return NextResponse.json({ message: "Profile updated successfully" });
+            
+            // 👈 التعديل هنا: نرسل الرابط النهائي للواجهة
+            return NextResponse.json({ message: "Profile updated successfully", imageUrl: finalImageUrl });
         }
 
+        // --- جميع الميزات السابقة والمسارات تعمل كما هي 100% دون أي تعديل أو خسارة كود ---
         if (action === "request_email_change") {
             const { newEmail } = body;
             if (!newEmail || newEmail === currentEmail) {
@@ -131,6 +180,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: "Invalid action" }, { status: 400 });
 
     } catch (error) {
+        console.error("Personal Route Error:", error);
         return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }
