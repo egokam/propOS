@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import nodemailer from "nodemailer";
-import { emailOTP } from "better-auth/plugins";
-import { pool } from "./db"; // استيراد الاتصال الموحد من ملف db.ts
+import { emailOTP, twoFactor } from "better-auth/plugins";
+import { pool } from "./db"; 
+import bcrypt from "bcryptjs"; // <-- استيراد مكتبة التشفير
 
 // إعداد خادم Brevo SMTP
 const transporter = nodemailer.createTransport({
@@ -15,9 +16,18 @@ const transporter = nodemailer.createTransport({
 });
 
 export const auth = betterAuth({
-  database: pool, // استخدام الـ pool الموحد
+  database: pool, 
   emailAndPassword: {
     enabled: true,
+    // <-- توحيد التشفير بين التطبيق وإعداداتك المخصصة
+    password: {
+      hash: async (password) => {
+        return await bcrypt.hash(password, 10);
+      },
+      verify: async ({ hash, password }) => {
+        return await bcrypt.compare(password, hash);
+      },
+    },
   },
   plugins: [
     emailOTP({
@@ -31,7 +41,7 @@ export const auth = betterAuth({
               <div style="font-family: sans-serif; color: #333; padding: 20px;">
                 <h2>Welcome to PropOS!</h2>
                 <p>Your verification code is: <strong style="font-size: 24px; color: #000;">${otp}</strong></p>
-                <p>Please enter this code to complete your registration.</p>
+                <p>Please enter this code to complete your verification.</p>
               </div>
             `,
           });
@@ -40,6 +50,9 @@ export const auth = betterAuth({
           console.error("Failed to send OTP via Brevo:", error);
         }
       }
+    }),
+    twoFactor({
+      issuer: "PropOS", 
     })
   ]
 });
