@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
-import { QRCodeSVG } from "qrcode.react";
+// استدعاء المكونات المستقلة الجديدة
+import AppAuthenticator from "@/components/settings/AppAuthenticator";
+import EmailAuthenticator from "@/components/settings/EmailAuthenticator";
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -39,14 +41,6 @@ export default function SettingsPage() {
     const [resetPw1, setResetPw1] = useState("");
     const [resetPw2, setResetPw2] = useState("");
 
-    const [is2faAppEnabled, setIs2faAppEnabled] = useState(false);
-    const [is2faEmailEnabled, setIs2faEmailEnabled] = useState(false);
-
-    // 2FA Modal State: step 0 = password, step 1 = QR/Code
-    const [twoFaModal, setTwoFaModal] = useState<{ isOpen: boolean, type: 'app' | 'email' | null, action: 'enable' | 'disable', step: number, totpUri: string }>({ isOpen: false, type: null, action: 'enable', step: 0, totpUri: "" });
-    const [twoFaPassword, setTwoFaPassword] = useState("");
-    const [twoFaSetupCode, setTwoFaSetupCode] = useState("");
-
     const [activeDevices, setActiveDevices] = useState<any[]>([]);
     const [isLoadingDevices, setIsLoadingDevices] = useState(true);
 
@@ -58,16 +52,6 @@ export default function SettingsPage() {
         if (session?.user) {
             setFullName(session.user.name || "");
             setEmail(session.user.email || "");
-
-            // إضافة هذا الجزء لقراءة حالة الـ 2FA
-            const user = session.user as any;
-            if (user.twoFactorEnabled) {
-                // إذا كان مفعل عبر تطبيق المصادقة
-                setIs2faAppEnabled(true);
-            } else {
-                setIs2faAppEnabled(false);
-            }
-
             fetchActiveSessions();
         }
     }, [session, isPending, router]);
@@ -204,8 +188,6 @@ export default function SettingsPage() {
         }
     };
 
-    // ================= SECURITY TAB FUNCTIONS =================
-
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) return alert("New passwords do not match!");
@@ -287,65 +269,6 @@ export default function SettingsPage() {
     const closeForgotPwModal = () => {
         setIsForgotPwModalOpen(false);
         setForgotPwStep(0); setForgotPwOtp(""); setForgotPwError(""); setResetPw1(""); setResetPw2("");
-    };
-
-    // ================= 2FA FUNCTIONS =================
-
-    const handle2faToggle = (type: 'app' | 'email', checked: boolean) => {
-        setTwoFaModal({ isOpen: true, type, action: checked ? 'enable' : 'disable', step: 0, totpUri: "" });
-    };
-
-    const close2faModal = () => {
-        setTwoFaModal({ isOpen: false, type: null, action: 'enable', step: 0, totpUri: "" });
-        setTwoFaPassword("");
-        setTwoFaSetupCode("");
-    };
-
-    const handle2faPasswordSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!twoFaPassword) return;
-
-        if (twoFaModal.action === 'enable') {
-            if (twoFaModal.type === 'app') {
-                const res = await authClient.twoFactor.enable({ password: twoFaPassword });
-                if (res.error) return alert(res.error.message || "Incorrect Password");
-                setTwoFaModal(prev => ({ ...prev, step: 1, totpUri: res.data?.totpURI || "" }));
-            } else {
-                const res = await fetch("/api/settings/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request_email_2fa_setup", password: twoFaPassword }) });
-                if (!res.ok) return alert("Incorrect password or error");
-                setTwoFaModal(prev => ({ ...prev, step: 1 }));
-            }
-        } else {
-            // Disable Flow
-            if (twoFaModal.type === 'app') {
-                const res = await authClient.twoFactor.disable({ password: twoFaPassword });
-                if (res.error) return alert(res.error.message || "Incorrect Password");
-                setIs2faAppEnabled(false);
-                close2faModal();
-            } else {
-                const res = await fetch("/api/settings/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "disable_email_2fa", password: twoFaPassword }) });
-                if (!res.ok) return alert("Incorrect password or error");
-                setIs2faEmailEnabled(false);
-                close2faModal();
-            }
-        }
-    };
-
-    const handle2faConfirmSetup = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (twoFaSetupCode.length === 6) {
-            if (twoFaModal.type === 'app') {
-                const res = await authClient.twoFactor.verifyTotp({ code: twoFaSetupCode });
-                if (res.error) return alert(res.error.message || "Invalid Code");
-                setIs2faAppEnabled(true);
-                close2faModal();
-            } else {
-                const res = await fetch("/api/settings/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "verify_email_2fa_setup", otp: twoFaSetupCode }) });
-                if (!res.ok) return alert("Invalid Code");
-                setIs2faEmailEnabled(true);
-                close2faModal();
-            }
-        }
     };
 
     if (isPending) return <div className="min-h-dvh bg-[#222231] flex items-center justify-center text-[#02AFA9]">Loading...</div>;
@@ -558,31 +481,14 @@ export default function SettingsPage() {
                                         </form>
                                     </div>
 
+                                    {/* 🛡️ THE ISOLATED 2FA COMPONENTS 🛡️ */}
                                     <div className="bg-[#1a1a24] border border-white/5 rounded-xl p-6">
                                         <h3 className="text-sm font-medium text-white mb-1">Two-Factor Authentication (2FA)</h3>
                                         <p className="text-xs text-white/40 mb-6">Add an extra layer of security to your account.</p>
 
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between p-4 border border-white/5 rounded-lg bg-[#222231]">
-                                                <div>
-                                                    <p className="text-sm font-medium text-white">Authenticator App</p>
-                                                    <p className="text-[11px] text-white/40">Google Authenticator, Authy, etc.</p>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input type="checkbox" className="sr-only peer" checked={is2faAppEnabled} onChange={(e) => handle2faToggle('app', e.target.checked)} />
-                                                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#02AFA9]"></div>
-                                                </label>
-                                            </div>
-                                            <div className="flex items-center justify-between p-4 border border-white/5 rounded-lg bg-[#222231]">
-                                                <div>
-                                                    <p className="text-sm font-medium text-white">Email Recovery</p>
-                                                    <p className="text-[11px] text-white/40">Receive a code via Email</p>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input type="checkbox" className="sr-only peer" checked={is2faEmailEnabled} onChange={(e) => handle2faToggle('email', e.target.checked)} />
-                                                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#02AFA9]"></div>
-                                                </label>
-                                            </div>
+                                            <AppAuthenticator />
+                                            <EmailAuthenticator />
                                         </div>
                                     </div>
 
@@ -786,83 +692,6 @@ export default function SettingsPage() {
                                 <div><input type="password" required value={resetPw1} onChange={(e) => setResetPw1(e.target.value)} className="w-full h-11 bg-[#1a1a24] border border-white/10 rounded-md px-4 text-sm text-white focus:outline-none focus:border-[#02AFA9] transition-all" placeholder="New Password" /></div>
                                 <div><input type="password" required value={resetPw2} onChange={(e) => setResetPw2(e.target.value)} className="w-full h-11 bg-[#1a1a24] border border-white/10 rounded-md px-4 text-sm text-white focus:outline-none focus:border-[#02AFA9] transition-all" placeholder="Confirm New Password" /></div>
                                 <button type="submit" disabled={resetPw1 !== resetPw2 || resetPw1.length < 6} className="w-full h-11 rounded-md bg-[#02AFA9] text-xs font-semibold uppercase tracking-wider text-white hover:bg-[#05bbb5] transition-colors disabled:opacity-50">Save New Password</button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* NEW 2FA MODAL (PASSWORD PROTECTED & QR CODE RENDERING) */}
-            {twoFaModal.isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#222231]/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-[400px] bg-[#2a2a3c] border border-white/10 rounded-lg p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
-                        <button onClick={close2faModal} className="absolute top-4 right-4 p-2 text-white/50 hover:text-white hover:bg-white/5 rounded-full transition-colors">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-
-                        <h2 className="text-xl font-medium mb-1">
-                            {twoFaModal.action === 'enable' ? 'Setup Two-Factor Auth' : 'Disable Two-Factor Auth'}
-                        </h2>
-                        <p className="text-sm text-white/50 mb-6">
-                            {twoFaModal.step === 0
-                                ? 'Please enter your password to continue.'
-                                : twoFaModal.type === 'app'
-                                    ? 'Scan the QR code with your Authenticator App.'
-                                    : 'We sent a secure code to your email.'}
-                        </p>
-
-                        {twoFaModal.step === 0 ? (
-                            <form onSubmit={handle2faPasswordSubmit} className="space-y-5">
-                                <div>
-                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Your Password</label>
-                                    <input
-                                        type="password" required value={twoFaPassword} onChange={(e) => setTwoFaPassword(e.target.value)}
-                                        className="w-full h-11 bg-[#1a1a24] border border-white/5 rounded-md px-4 text-sm text-white focus:outline-none focus:border-[#02AFA9] transition-all"
-                                        placeholder="Enter password"
-                                    />
-                                </div>
-                                <button type="submit" disabled={!twoFaPassword} className="w-full h-11 rounded-md bg-[#02AFA9] text-xs font-semibold uppercase tracking-wider text-white hover:bg-[#05bbb5] transition-colors disabled:opacity-50">
-                                    Continue
-                                </button>
-                            </form>
-                        ) : (
-                            <form onSubmit={handle2faConfirmSetup} className="space-y-5 animate-in slide-in-from-right-4 duration-300">
-                                {twoFaModal.type === 'app' && twoFaModal.totpUri && (
-                                    <div className="flex flex-col items-center justify-center mb-6 space-y-4">
-                                        <div className="w-44 h-44 bg-white rounded-lg flex items-center justify-center border-4 border-white/10 p-2">
-                                            <QRCodeSVG value={twoFaModal.totpUri} size={160} />
-                                        </div>
-
-                                        {/* إضافة خيار الإدخال اليدوي */}
-                                        <div className="text-center w-full">
-                                            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50 mb-1.5">
-                                                Or enter this code manually:
-                                            </p>
-                                            <div className="bg-[#1a1a24] border border-white/10 px-3 py-2 rounded-md flex justify-center items-center">
-                                                <code className="text-[#02AFA9] font-mono tracking-[0.15em] text-xs select-all">
-                                                    {(() => {
-                                                        try {
-                                                            return new URL(twoFaModal.totpUri).searchParams.get("secret") || "No Secret Found";
-                                                        } catch {
-                                                            return "Invalid URI";
-                                                        }
-                                                    })()}
-                                                </code>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <div>
-                                    <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 mb-2">Enter Verification Code</label>
-                                    <input
-                                        type="text" required maxLength={6} value={twoFaSetupCode} onChange={(e) => setTwoFaSetupCode(e.target.value)}
-                                        className="w-full h-11 bg-[#1a1a24] border border-[#02AFA9]/50 rounded-md px-4 text-sm text-white focus:outline-none focus:border-[#02AFA9] transition-all text-center tracking-[0.3em]"
-                                        placeholder="000000"
-                                    />
-                                </div>
-                                <button type="submit" disabled={twoFaSetupCode.length < 6} className="w-full h-11 rounded-md bg-[#02AFA9] text-xs font-semibold uppercase tracking-wider text-white hover:bg-[#05bbb5] transition-colors disabled:opacity-50">
-                                    Verify & Enable
-                                </button>
                             </form>
                         )}
                     </div>

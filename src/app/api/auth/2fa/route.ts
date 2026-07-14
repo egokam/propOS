@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { pool } from "@/lib/db";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
 
 const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
@@ -24,8 +25,20 @@ export async function POST(request: Request) {
         const userId = session.user.id;
         const currentEmail = session.user.email;
         const body = await request.json();
-        const { action, otp } = body;
+        const { action, password, otp } = body;
 
+        // 1. التحقق من كلمة المرور للحماية
+        if (action === "request_email_2fa_setup" || action === "disable_email_2fa") {
+            const userRes = await pool.query(`SELECT password FROM account WHERE "userId" = $1 AND "providerId" = 'credential'`, [userId]);
+            const hashedPassword = userRes.rows[0]?.password;
+            
+            if (!hashedPassword) return NextResponse.json({ message: "No password found" }, { status: 400 });
+            
+            const isMatch = await bcrypt.compare(password, hashedPassword);
+            if (!isMatch) return NextResponse.json({ message: "Incorrect password" }, { status: 400 });
+        }
+
+        // 2. إرسال كود التفعيل للإيميل
         if (action === "request_email_2fa_setup") {
             const code = generateOTP();
             await pool.query(
@@ -38,12 +51,13 @@ export async function POST(request: Request) {
                 subject: "PropOS - 2FA Setup Code",
                 html: `<div style="font-family: sans-serif; padding: 20px;">
                         <h2>Two-Factor Authentication Setup</h2>
-                        <p>Your verification code is: <strong style="font-size: 24px;">${code}</strong></p>
+                        <p>Your verification code is: <strong style="font-size: 24px; color: #02AFA9;">${code}</strong></p>
                       </div>`
             });
             return NextResponse.json({ message: "OTP sent" });
         }
 
+        // 3. التحقق من الكود المُدخل وتفعيل الخاصية
         if (action === "verify_email_2fa_setup") {
             const res = await pool.query(
                 `SELECT * FROM verification_codes WHERE email = $1 AND code = $2 AND operation_type = 'email_2fa_setup' AND expires_at > NOW()`, 
@@ -51,14 +65,21 @@ export async function POST(request: Request) {
             );
             if (res.rows.length === 0) return NextResponse.json({ message: "Invalid OTP" }, { status: 400 });
 
-            // تحديث الإعدادات في أعمدة better-auth الرسمية
-            await pool.query(`UPDATE "user" SET "twoFactorEnabled" = true, two_factor_type = 'email' WHERE id = $1`, [userId]);
+            await pool.query(`UPDATE "user" SET "twoFactorEnabled" = true, "two_factor_type" = 'email' WHERE id = $1`, [userId]);
             await pool.query(`DELETE FROM verification_codes WHERE id = $1`, [res.rows[0].id]);
             return NextResponse.json({ message: "Email 2FA enabled" });
         }
 
+        // 4. تعطيل الخاصية (بشكل ذكي)
         if (action === "disable_email_2fa") {
-            await pool.query(`UPDATE "user" SET "twoFactorEnabled" = false, two_factor_type = NULL WHERE id = $1`, [userId]);
+            const appRes = await pool.query(`SELECT id FROM "twoFactor" WHERE "userId" = $1`, [userId]);
+            
+            // إذا كان تطبيق المصادقة لا يزال مفعلاً، نحذف نوع الإيميل فقط ولا نلغي الـ 2FA بالكامل
+            if (appRes.rows.length > 0) {
+                await pool.query(`UPDATE "user" SET "two_factor_type" = NULL WHERE id = $1`, [userId]);
+            } else {
+                await pool.query(`UPDATE "user" SET "twoFactorEnabled" = false, "two_factor_type" = NULL WHERE id = $1`, [userId]);
+            }
             return NextResponse.json({ message: "Email 2FA disabled" });
         }
 
@@ -66,5 +87,27 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error(error);
         return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    }
+}
+
+// الدالة الجديدة لجلب حالة كل مصادقة بشكل مستقل
+export async function GET(request: Request) {
+    try {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) return NextResponse.json({ appEnabled: false, emailEnabled: false }, { status: 401 });
+
+        const userId = session.user.id;
+
+        // التحقق من حالة الإيميل
+        const userRes = await pool.query(`SELECT "two_factor_type" FROM "user" WHERE id = $1`, [userId]);
+        const isEmailEnabled = userRes.rows[0]?.two_factor_type === 'email';
+
+        // التحقق من حالة التطبيق (إذا كان يملك مفتاح تشفير مسجل في الجدول المخصص)
+        const appRes = await pool.query(`SELECT id FROM "twoFactor" WHERE "userId" = $1`, [userId]);
+        const isAppEnabled = appRes.rows.length > 0;
+
+        return NextResponse.json({ appEnabled: isAppEnabled, emailEnabled: isEmailEnabled });
+    } catch (error) {
+        return NextResponse.json({ appEnabled: false, emailEnabled: false }, { status: 500 });
     }
 }
