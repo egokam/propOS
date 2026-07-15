@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const primaryLinks = [
-  { label: "About Developper", href: "#" },
+  { label: "About Developper", href: "https://portfolio.egokam.site" },
   { label: "Pricing", href: "#" },
   { label: "About", href: "#" },
   { label: "Docs", href: "#" },

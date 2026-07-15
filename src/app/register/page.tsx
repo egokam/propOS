@@ -10,8 +10,6 @@ import { authClient } from "@/lib/auth-client";
 
 const PROPERTY_TYPES = [
     "Syndic",
-    "Villa",
-    "Immeuble",
     "commercial agent"
 ];
 

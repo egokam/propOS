@@ -8,8 +8,6 @@ import { ArrowRightIcon } from "@/components/icons/ArrowRightIcon";
 
 const PROPERTY_TYPES = [
     "Syndic",
-    "Villa",
-    "Immeuble",
     "Commercial Agent"
 ];
 
