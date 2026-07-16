@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// تهيئة عميل Supabase للواجهة الأمامية (WebSockets)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -15,7 +14,6 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
     const [hasUnread, setHasUnread] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 1. جلب الرسائل السابقة عند التحميل
     useEffect(() => {
         const fetchMessages = async () => {
             try {
@@ -33,7 +31,6 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
         fetchMessages();
     }, [propertyId]);
 
-    // 2. الاستماع للرسائل الحية (Realtime Subscriptions)
     useEffect(() => {
         const channel = supabase
             .channel('realtime_agency_chat')
@@ -41,12 +38,11 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'agency_messages',
-                filter: `property_id=eq.${propertyId}` // استلام رسائل وكالتي فقط
+                filter: `property_id=eq.${propertyId}`
             }, (payload) => {
                 const newMsg = payload.new;
                 setMessages((prev) => [...prev, newMsg]);
                 
-                // تنبيه إذا كانت النافذة مغلقة والرسالة ليست مني
                 if (!isOpen && newMsg.sender_name !== agentName) {
                     setHasUnread(true);
                 }
@@ -59,20 +55,18 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
         };
     }, [propertyId, isOpen, agentName]);
 
-    // التمرير للأسفل
     const scrollToBottom = () => {
         setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
     };
 
-    // 3. إرسال رسالة
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
 
         const msgText = newMessage.trim();
-        setNewMessage(""); // تفريغ الحقل فوراً لتجربة سريعة
+        setNewMessage(""); 
 
         try {
             await fetch("/api/commercial/chat", {
@@ -84,13 +78,11 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
                     message: msgText
                 })
             });
-            // لن نقوم بتحديث الـ State هنا لأن الـ Realtime سيجلبها تلقائياً
         } catch (error) {
             console.error("Failed to send message", error);
         }
     };
 
-    // عند فتح النافذة، إزالة التنبيه
     const toggleChat = () => {
         setIsOpen(!isOpen);
         if (!isOpen) setHasUnread(false);
@@ -98,9 +90,8 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
-            {/* نافذة المحادثة الداخلية */}
-            <div className={`mb-4 w-[350px] bg-[#1a1a24] border border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 origin-bottom-right ${isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}>
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end pointer-events-none">
+            <div className={`mb-4 w-[350px] bg-[#1a1a24] border border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 origin-bottom-right ${isOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-0 opacity-0 pointer-events-none"}`}>
                 
                 <div className="bg-[#14141d] border-b border-white/5 p-4 flex justify-between items-center text-white">
                     <div className="flex items-center gap-3">
@@ -160,10 +151,9 @@ export default function LiveChatWidget({ propertyId, agentName }: { propertyId: 
                 </form>
             </div>
 
-            {/* الزر العائم */}
             <button 
                 onClick={toggleChat}
-                className={`w-14 h-14 rounded-full text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] flex items-center justify-center hover:scale-110 transition-all duration-300 relative group border border-white/10 ${isOpen ? 'bg-[#1a1a24]' : 'bg-[#1a1a24] hover:bg-[#222231]'}`}
+                className={`pointer-events-auto w-14 h-14 rounded-full text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] flex items-center justify-center hover:scale-110 transition-all duration-300 relative group border border-white/10 ${isOpen ? 'bg-[#1a1a24]' : 'bg-[#1a1a24] hover:bg-[#222231]'}`}
             >
                 {hasUnread && !isOpen && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
