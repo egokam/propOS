@@ -72,20 +72,33 @@ function ManageSyndicContent() {
         }
     };
 
-    const toggleOwnerPayment = async (aptIds: string[], currentStatus: boolean) => {
+    const toggleOwnerPayment = async (ownerName: string, currentStatus: boolean, totalDue: number) => {
         const newStatus = !currentStatus;
-        setApartments(prev => prev.map(apt => aptIds.includes(apt.id) ? { ...apt, is_paid_current_month: newStatus } : apt));
+        
+        setApartments(prev => prev.map(apt => 
+            apt.owner_name === ownerName ? { ...apt, is_paid: newStatus } : apt
+        ));
 
         try {
-            await Promise.all(aptIds.map(id => 
-                fetch(`/api/manage`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: "toggle_payment", id, is_paid: newStatus, month: currentMonthLabel })
+            const res = await fetch(`/api/manage`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    action: "toggle_owner_payment", 
+                    property_id: propertyId,
+                    owner_name: ownerName, 
+                    is_paid: newStatus, 
+                    month: currentMonthLabel,
+                    total_amount: totalDue
                 })
-            ));
+            });
+
+            if (!res.ok) throw new Error("Failed");
         } catch (error) {
-            setApartments(prev => prev.map(apt => aptIds.includes(apt.id) ? { ...apt, is_paid_current_month: currentStatus } : apt));
+            setApartments(prev => prev.map(apt => 
+                apt.owner_name === ownerName ? { ...apt, is_paid: currentStatus } : apt
+            ));
+            alert("Failed to update payment status.");
         }
     };
 
@@ -201,7 +214,7 @@ function ManageSyndicContent() {
         }
         acc[apt.owner_name].owned_units.push(`${apt.block_name} - Apt ${apt.apartment_number}`);
         acc[apt.owner_name].aptIds.push(apt.id);
-        if (!apt.is_paid_current_month) acc[apt.owner_name].allPaid = false;
+        if (!apt.is_paid) acc[apt.owner_name].allPaid = false;
         return acc;
     }, {} as Record<string, any>);
 
@@ -475,7 +488,7 @@ function ManageSyndicContent() {
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={owner.allPaid}
-                                                                    onChange={() => toggleOwnerPayment(owner.aptIds, owner.allPaid)}
+                                                                    onChange={() => toggleOwnerPayment(owner.owner_name, owner.allPaid, totalDue)}
                                                                     className="peer sr-only"
                                                                 />
                                                                 <div className="w-5 h-5 bg-[#222231] border border-white/10 rounded-[4px] peer-checked:bg-[#02AFA9] peer-checked:border-[#02AFA9] transition-colors group-hover:border-[#02AFA9]/50"></div>

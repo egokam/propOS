@@ -48,6 +48,16 @@ export async function PUT(request: Request) {
                 `UPDATE apartments SET owner_name = $1, phone = $2, email = $3, floor = $4 WHERE id = $5`,
                 [data.owner_name, data.phone, data.email, data.floor, data.id]
             );
+        } else if (data.action === "toggle_owner_payment") {
+            await pool.query(
+                `UPDATE apartments SET is_paid = $1 FROM blocks WHERE apartments.block_id = blocks.id AND blocks.property_id = $2 AND apartments.owner_name = $3`,
+                [data.is_paid, data.property_id, data.owner_name]
+            );
+        } else if (data.action === "update_fee") {
+            await pool.query(
+                `UPDATE properties SET monthly_fee = $1 WHERE id = $2 AND user_id = $3`,
+                [data.monthly_fee, data.id, session.user.id]
+            );
         }
         
         return NextResponse.json({ message: "Success" }, { status: 200 });
